@@ -1,14 +1,13 @@
 import time #Iwish
 import os
 import json
-import openai
 import streamlit as st
-from streamlit_lottie import st_lottie
 from tenacity import (
     retry,
     stop_after_attempt,
     wait_random_exponential,
 )
+import google.generativeai as genai
 
 
 def main():
@@ -16,7 +15,6 @@ def main():
     st.set_page_config(
         page_title="Alwrity",
         layout="wide",
-        page_icon="img/logo.png"
     )
     # Remove the extra spaces from margin top.
     st.markdown("""
@@ -34,8 +32,8 @@ def main():
       [class="st-emotion-cache-7ym5gk ef3psqc12"]{{
             display: inline-block;
             padding: 5px 20px;
-            background-color: #4A55A2;’
-            color: #C5DFF8;
+            background-color: #4681f4;
+            color: #FBFFFF;
             width: 300px;
             height: 35px;
             text-align: center;
@@ -55,28 +53,17 @@ def main():
     hide_streamlit_footer = '<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;}</style>'
     st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
-    # Sidebar input for OpenAI API Key
-    st.sidebar.image("img/alwrity.jpeg", use_column_width=True)
-    st.sidebar.markdown(f"🧕 :red[Checkout Alwrity], complete **AI writer & Blogging solution**:[Alwrity](https://alwrity.netlify.app)")
-    
     # Title and description
     st.title("✍️ Alwrity - AI Blog Title Generator")
 
-    st.markdown('''
-                Generate SEO optimized Blog Title - powered by AI (OpenAI GPT-3, Gemini Pro).
-                Implemented by [Alwrity](https://alwrity.netlify.app).
-                Alwrity will do web research for given keywords OR Blog content.
-                It will AI-lyze top blog titles and then generate 2 SEO optimized titles.
-                ''')
-
     # Input section
     with st.expander("**PRO-TIP** - Read the instructions below.", expanded=True):
-        input_blog_keywords = st.text_input('**Enter main keywords of your blog!** (2-3 words that define your blog)')
-        input_blog_content = st.text_input('**Copy/Paste your entire blog content.** (Tip: Use Alwrity to write your blog)', 'Optional')
         col1, col2, space = st.columns([5, 5, 0.5])
         with col1:
-            input_title_type = st.selectbox('Blog Type', ('General', 'How-to Guides', 'Tutorials', 'Listicles', 'Newsworthy Posts', 'FAQs', 'Checklists/Cheat Sheets'), index=0)
+            input_blog_keywords = st.text_input('**Enter main keywords of your blog!** (2-3 words that define your blog)')
+            input_blog_content = st.text_input('**Copy/Paste your entire blog content.** (Tip: Use Alwrity to write your blog)', 'Optional')
         with col2:
+            input_title_type = st.selectbox('Blog Type', ('General', 'How-to Guides', 'Tutorials', 'Listicles', 'Newsworthy Posts', 'FAQs', 'Checklists/Cheat Sheets'), index=0)
             input_title_intent = st.selectbox('Search Intent', ('Informational Intent', 'Commercial Intent', 'Transactional Intent', 'Navigational Intent'), index=0)
 
     # Generate Blog Title button
@@ -91,7 +78,7 @@ def main():
             elif input_blog_keywords or input_blog_content:
                 blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent)
                 if blog_titles:
-                    st.subheader('**👩‍🔬👩‍🔬Go Rule search ranking with these Blog Titles!**')
+                    st.subheader('**👩🧕🔬Go Rule search ranking with these Blog Titles!**')
                     with st.expander("** Final - Blog Titles Output 🎆🎇 🎇 **", expanded=True):
                         st.markdown(blog_titles)
                 else:
@@ -139,62 +126,64 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
 
         blog content: '{input_blog_content}'\n
         """
-    blog_titles = openai_chatgpt(prompt)
+    blog_titles = generate_text_with_exception_handling(prompt)
     return blog_titles
 
 
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-def openai_chatgpt(prompt, model="gpt-3.5-turbo-0125", temperature=0.2, max_tokens=500, top_p=0.9, n=3):
+def generate_text_with_exception_handling(prompt):
     """
-    Wrapper function for OpenAI's ChatGPT completion.
+    Generates text using the Gemini model with exception handling.
 
     Args:
-        prompt (str): The input text to generate completion for.
-        model (str, optional): Model to be used for the completion. Defaults to "gpt-4-1106-preview".
-        temperature (float, optional): Controls randomness. Lower values make responses more deterministic. Defaults to 0.2.
-        max_tokens (int, optional): Maximum number of tokens to generate. Defaults to 8192.
-        top_p (float, optional): Controls diversity. Defaults to 0.9.
-        n (int, optional): Number of completions to generate. Defaults to 1.
+        api_key (str): Your Google Generative AI API key.
+        prompt (str): The prompt for text generation.
 
     Returns:
-        str: The generated text completion.
-
-    Raises:
-        SystemExit: If an API error, connection error, or rate limit error occurs.
+        str: The generated text.
     """
-    # Wait for 10 seconds to comply with rate limits
-    for _ in range(10):
-        time.sleep(1)
 
     try:
-        client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        response = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens,
-            n=n,
-            top_p=top_p
-            # Additional parameters can be included here
-        )
-        return response.choices[0].message.content
+        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
-    except openai.APIError as e:
-        st.error(f"OpenAI API Error: {e}")
-    except openai.APIConnectionError as e:
-        st.error(f"Failed to connect to OpenAI API: {e}")
-    except openai.RateLimitError as e:
-        st.error(f"Rate limit exceeded on OpenAI API request: {e}")
-    except Exception as err:
-        st.error(f"OpenAI error: {err}")
+        generation_config = {
+            "temperature": 1,
+            "top_p": 0.95,
+            "top_k": 0,
+            "max_output_tokens": 8192,
+        }
 
+        safety_settings = [
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            },
+            {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+            },
+        ]
 
+        model = genai.GenerativeModel(model_name="gemini-1.5-pro-latest",
+                                      generation_config=generation_config,
+                                      safety_settings=safety_settings)
 
-# Function to import JSON data
-def import_json(path):
-    with open(path, "r", encoding="utf8", errors="ignore") as file:
-        url = json.load(file)
-        return url
+        convo = model.start_chat(history=[])
+        convo.send_message(prompt)
+        return convo.last.text
+
+    except Exception as e:
+        st.exception(f"ERROR: An unexpected error occurred: {e}")
+        return None
 
 
 if __name__ == "__main__":
