@@ -66,23 +66,23 @@ def main():
             input_title_type = st.selectbox('Blog Type', ('General', 'How-to Guides', 'Tutorials', 'Listicles', 'Newsworthy Posts', 'FAQs', 'Checklists/Cheat Sheets'), index=0)
             input_title_intent = st.selectbox('Search Intent', ('Informational Intent', 'Commercial Intent', 'Transactional Intent', 'Navigational Intent'), index=0)
 
-    # Generate Blog Title button
-    if st.button('**Generate Blog Titles**'):
-        with st.spinner():
-            if input_blog_content == 'Optional':
-                input_blog_content = None
+        # Generate Blog Title button
+        if st.button('**Generate Blog Titles**'):
+            with st.spinner():
+                if input_blog_content == 'Optional':
+                    input_blog_content = None
 
-            # Clicking without providing data, really ?
-            if (not input_blog_keywords) and (not input_blog_content):
-                st.error('** 🫣Provide Inputs to generate Blog Tescription. Either Blog Keywords OR content, is required!**')
-            elif input_blog_keywords or input_blog_content:
-                blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent)
-                if blog_titles:
-                    st.subheader('**👩🧕🔬Go Rule search ranking with these Blog Titles!**')
-                    with st.expander("** Final - Blog Titles Output 🎆🎇 🎇 **", expanded=True):
-                        st.markdown(blog_titles)
-                else:
-                    st.error("💥**Failed to generate blog titles. Please try again!**")
+                # Clicking without providing data, really ?
+                if (not input_blog_keywords) and (not input_blog_content):
+                    st.error('** 🫣Provide Inputs to generate Blog Tescription. Either Blog Keywords OR content, is required!**')
+                elif input_blog_keywords or input_blog_content:
+                    blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent)
+                    if blog_titles:
+                        st.subheader('**👩🧕🔬Go Rule search ranking with these Blog Titles!**')
+                        with st.expander("** Final - Blog Titles Output 🎆🎇 🎇 **", expanded=True):
+                            st.markdown(blog_titles)
+                    else:
+                        st.error("💥**Failed to generate blog titles. Please try again!**")
 
 
 # Function to generate blog metadesc
