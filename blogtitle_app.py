@@ -66,23 +66,23 @@ def main():
             input_title_type = st.selectbox('Blog Type', ('General', 'How-to Guides', 'Tutorials', 'Listicles', 'Newsworthy Posts', 'FAQs', 'Checklists/Cheat Sheets'), index=0)
             input_title_intent = st.selectbox('Search Intent', ('Informational Intent', 'Commercial Intent', 'Transactional Intent', 'Navigational Intent'), index=0)
 
-        # Generate Blog Title button
-        if st.button('**Generate Blog Titles**'):
-            with st.spinner():
-                if input_blog_content == 'Optional':
-                    input_blog_content = None
+    # Generate Blog Title button
+    if st.button('**Generate Blog Titles**'):
+        with st.spinner():
+            if input_blog_content == 'Optional':
+                input_blog_content = None
 
-                # Clicking without providing data, really ?
-                if (not input_blog_keywords) and (not input_blog_content):
-                    st.error('** 🫣Provide Inputs to generate Blog Tescription. Either Blog Keywords OR content, is required!**')
-                elif input_blog_keywords or input_blog_content:
-                    blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent)
-                    if blog_titles:
-                        st.subheader('**👩🧕🔬Go Rule search ranking with these Blog Titles!**')
-                        with st.expander("** Final - Blog Titles Output 🎆🎇 🎇 **", expanded=True):
-                            st.markdown(blog_titles)
-                    else:
-                        st.error("💥**Failed to generate blog titles. Please try again!**")
+            # Clicking without providing data, really ?
+            if (not input_blog_keywords) and (not input_blog_content):
+                st.error('** 🫣Provide Inputs to generate Blog Tescription. Either Blog Keywords OR content, is required!**')
+            elif input_blog_keywords or input_blog_content:
+                blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent)
+                if blog_titles:
+                    st.subheader('**👩🧕🔬Go Rule search ranking with these Blog Titles!**')
+                    with st.expander("** Final - Blog Titles Output 🎆🎇 🎇 **", expanded=True):
+                        st.markdown(blog_titles)
+                else:
+                    st.error("💥**Failed to generate blog titles. Please try again!**")
 
 
 # Function to generate blog metadesc
@@ -126,64 +126,35 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
 
         blog content: '{input_blog_content}'\n
         """
-    blog_titles = generate_text_with_exception_handling(prompt)
+    blog_titles = gemini_text_response(prompt)
     return blog_titles
 
 
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-def generate_text_with_exception_handling(prompt):
-    """
-    Generates text using the Gemini model with exception handling.
-
-    Args:
-        api_key (str): Your Google Generative AI API key.
-        prompt (str): The prompt for text generation.
-
-    Returns:
-        str: The generated text.
-    """
-
+def gemini_text_response(prompt):
+    """ Common functiont to get response from gemini pro Text. """
     try:
         genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+    except Exception as err:
+        st.error(f"Failed to configure Gemini: {err}")
+    # Set up the model
+    generation_config = {
+        "temperature": 0.6,
+        "top_p": 0.3,
+        "top_k": 1,
+        "max_output_tokens": 1024
+    }
+    # FIXME: Expose model_name in main_config
+    model = genai.GenerativeModel(model_name="gemini-1.0-pro", generation_config=generation_config)
+    try:
+        # text_response = []
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as err:
+        st.error(response)
+        st.error(f"Failed to get response from Gemini: {err}. Retrying.")
 
-        generation_config = {
-            "temperature": 1,
-            "top_p": 0.95,
-            "top_k": 0,
-            "max_output_tokens": 8192,
-        }
-
-        safety_settings = [
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-            },
-            {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-            },
-        ]
-
-        model = genai.GenerativeModel(model_name="gemini-1.5-pro-latest",
-                                      generation_config=generation_config,
-                                      safety_settings=safety_settings)
-
-        convo = model.start_chat(history=[])
-        convo.send_message(prompt)
-        return convo.last.text
-
-    except Exception as e:
-        st.exception(f"ERROR: An unexpected error occurred: {e}")
-        return None
 
 
 if __name__ == "__main__":
