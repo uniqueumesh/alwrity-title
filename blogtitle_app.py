@@ -81,6 +81,7 @@ def main():
                     st.subheader('**👩🧕🔬Go Rule search ranking with these Blog Titles!**')
                     with st.expander("** Final - Blog Titles Output 🎆🎇 🎇 **", expanded=True):
                         st.markdown(blog_titles)
+                        st.markdown("\n\n\n\n\n\n")
                 else:
                     st.error("💥**Failed to generate blog titles. Please try again!**")
 
@@ -146,7 +147,7 @@ def gemini_text_response(prompt):
         "max_output_tokens": 1024
     }
     # FIXME: Expose model_name in main_config
-    model = genai.GenerativeModel(model_name="gemini-1.0-pro", generation_config=generation_config)
+    model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest", generation_config=generation_config)
     try:
         # text_response = []
         response = model.generate_content(prompt)
