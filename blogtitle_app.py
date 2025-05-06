@@ -65,7 +65,9 @@ def main():
     hide_streamlit_footer = '<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;}</style>'
     st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
-    # --- API Key Input Section ---
+    st.title("✍️ Alwrity - AI Blog Title Generator")
+
+    # --- API Key Input Section (moved below title) ---
     with st.expander("API Configuration 🔑", expanded=False):
         st.markdown('''If the default Gemini API key is unavailable or exceeds its limits, you can provide your own API key below.<br>
         <a href="https://aistudio.google.com/app/apikey" target="_blank">Get Gemini API Key</a><br>
@@ -73,8 +75,6 @@ def main():
         ''', unsafe_allow_html=True)
         user_gemini_api_key = st.text_input("Gemini API Key", type="password", help="Paste your Gemini API Key here if you have one. Otherwise, the tool will use the default key if available.")
         user_serper_api_key = st.text_input("Serper API Key (for SERP research)", type="password", help="Paste your Serper API Key here if you have one. Otherwise, the tool will use the default key if available.")
-
-    st.title("✍️ Alwrity - AI Blog Title Generator")
 
     # Input section
     with st.expander("**PRO-TIP** - Follow the steps below for best results.", expanded=True):
