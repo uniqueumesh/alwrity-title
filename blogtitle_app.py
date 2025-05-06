@@ -7,7 +7,6 @@ from tenacity import (
     stop_after_attempt,
     wait_random_exponential,
 )
-import google.generativeai as genai
 import pandas as pd
 import io
 
@@ -120,9 +119,17 @@ def main():
 
     # --- SERP Competitor Title Research ---
     serp_titles = []
+    serp_cache_key = f"serp_{input_blog_keywords}_{user_serper_api_key}"
     if input_blog_keywords:
-        serp_titles = get_serp_competitor_titles(input_blog_keywords, user_serper_api_key)
-        if serp_titles:
+        if serp_cache_key in st.session_state:
+            serp_titles = st.session_state[serp_cache_key]
+        else:
+            serp_titles = get_serp_competitor_titles(input_blog_keywords, user_serper_api_key)
+            st.session_state[serp_cache_key] = serp_titles
+        if serp_titles == 'RATE_LIMIT':
+            st.warning('⚠️ Serper API rate limit or quota exceeded. Please try again later or use a different API key.')
+            serp_titles = []
+        elif serp_titles:
             st.markdown('<h4 style="margin-top:1.5rem; color:#1976D2;">🔎 Top 10 Competitor Blog Titles from Google SERP</h4>', unsafe_allow_html=True)
             selected_title = st.selectbox('View a competitor title:', serp_titles, help="These are the top 10 blog titles from Google for your keyword. Use them for inspiration or comparison.")
         else:
@@ -169,9 +176,12 @@ def main():
 # Function to generate blog metadesc
 def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None, num_titles=5):
     """ Function to call upon LLM to get the work done. """
-    # Get competitor titles for inspiration
+    # Get competitor titles for inspiration (use cache if available)
     competitor_titles = []
-    if input_blog_keywords:
+    serp_cache_key = f"serp_{input_blog_keywords}_{os.getenv('SERPER_API_KEY') or ''}"
+    if input_blog_keywords and serp_cache_key in st.session_state:
+        competitor_titles = st.session_state[serp_cache_key] if st.session_state[serp_cache_key] != 'RATE_LIMIT' else []
+    elif input_blog_keywords:
         competitor_titles = get_serp_competitor_titles(input_blog_keywords)
     competitor_titles_str = '\n'.join(competitor_titles) if competitor_titles else ''
     # Improved prompt for best SEO practices
@@ -200,12 +210,16 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
     elif input_blog_content and not input_blog_keywords:
         prompt = f"""{seo_guidelines}{competitor_section}\n\nBlog content: '{input_blog_content}'"""
     blog_titles = gemini_text_response(prompt, user_gemini_api_key)
+    if blog_titles == 'RATE_LIMIT':
+        st.warning('⚠️ Gemini API rate limit or quota exceeded. Please try again later or use a different API key.')
+        return None
     return blog_titles
 
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
 def gemini_text_response(prompt, user_gemini_api_key=None):
-    """ Common function to get response from gemini pro Text. """
+    import google.generativeai as genai
+    import os
     try:
         api_key = user_gemini_api_key or os.getenv('GEMINI_API_KEY')
         if not api_key:
@@ -215,7 +229,6 @@ def gemini_text_response(prompt, user_gemini_api_key=None):
     except Exception as err:
         st.error(f"Failed to configure Gemini: {err}")
         return None
-    # Set up the model
     generation_config = {
         "temperature": 0.6,
         "top_p": 0.3,
@@ -225,15 +238,21 @@ def gemini_text_response(prompt, user_gemini_api_key=None):
     model = genai.GenerativeModel(model_name="gemini-1.5-flash", generation_config=generation_config)
     try:
         response = model.generate_content(prompt)
+        if hasattr(response, 'code') and response.code == 429:
+            return 'RATE_LIMIT'
+        if hasattr(response, 'text') and ('rate limit' in response.text.lower() or 'quota' in response.text.lower()):
+            return 'RATE_LIMIT'
         return response.text
     except Exception as err:
+        if 'quota' in str(err).lower() or 'rate limit' in str(err).lower():
+            return 'RATE_LIMIT'
         st.error(f"Failed to get response from Gemini: {err}. Retrying.")
         return None
 
 
 def get_serp_competitor_titles(search_keywords, user_serper_api_key=None):
-    """Fetch top 10 competitor blog titles from Google SERP using Serper API."""
     import requests
+    import json
     import os
     try:
         serper_api_key = user_serper_api_key or os.getenv('SERPER_API_KEY')
@@ -255,6 +274,8 @@ def get_serp_competitor_titles(search_keywords, user_serper_api_key=None):
             'Content-Type': 'application/json'
         }
         response = requests.post(url, headers=headers, data=payload)
+        if response.status_code == 429 or 'rate limit' in response.text.lower() or 'quota' in response.text.lower():
+            return 'RATE_LIMIT'
         if response.status_code == 200:
             data = response.json()
             titles = []
