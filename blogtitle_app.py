@@ -135,49 +135,30 @@ def main():
 # Function to generate blog metadesc
 def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None):
     """ Function to call upon LLM to get the work done. """
-    # If keywords and content both are given.
+    # Improved prompt for best SEO practices
+    seo_guidelines = f"""
+    Please generate 5 unique, SEO-optimized blog titles based on the provided information. Follow ALL of Google's and industry best practices for blog titles:
+    - Place the main keyword at the beginning of the title if possible.
+    - Keep each title concise (ideally 50–60 characters, max 65).
+    - Make each title unique, clear, and compelling.
+    - Use numbers, dates, or power words where appropriate.
+    - Clearly state the value or benefit to the reader.
+    - Avoid keyword stuffing; use the keyword naturally.
+    - Target the intended audience if specified.
+    - Use natural, engaging language (no clickbait or misleading phrasing).
+    - Ensure each title is highly relevant to the blog's content and keywords.
+    - Optimize for web search intent: {input_title_intent}.
+    - Optimize for blog type: {input_title_type}.
+    - Write the titles in {input_language}.
+    Output only the 5 titles as a numbered list, nothing else.
+    """
     if input_blog_content and input_blog_keywords:
-        prompt = f"""As a SEO expert, I will provide you with main 'blog keywords' and 'blog content'.
-        Your task is write 5 SEO optimised blog titles, from given blog keywords and content.
-
-        Follow the below guidelines for generating the blog titles:
-        1). As SEO expert, follow all best practises for SEO optimised blog titles.
-        2). Your response should be optimised around given keywords and content.
-        3). Optimise your response for web search intent {input_title_intent}.
-        4). Optimise your response for blog type of {input_title_type}.
-        5). Your blog titles should in {input_language} language.\n
-
-        blog keywords: '{input_blog_keywords}'\n
-        blog content: '{input_blog_content}'
-        """
+        prompt = f"""{seo_guidelines}\n\nMain blog keywords: '{input_blog_keywords}'\nBlog content: '{input_blog_content}'"""
     elif input_blog_keywords and not input_blog_content:
-        prompt = f"""As a SEO expert, I will provide you with main 'keywords' of a blog.
-        Your task is write 5 SEO optimised blog titles from given blog keywords.
-
-        Follow the below guidelines for generating the blog titles:
-        1). As SEO expert, follow all best practises for SEO optimised blog titles.
-        2). Your response should be optimised around given keywords and content.
-        3). Optimise your response for web search intent {input_title_intent}.
-        4). Optimise your response for blog type of {input_title_type}.
-        5). Your blog titles should in {input_language} language.\n
-
-        blog keywords: '{input_blog_keywords}'\n
-        """
+        prompt = f"""{seo_guidelines}\n\nMain blog keywords: '{input_blog_keywords}'"""
     elif input_blog_content and not input_blog_keywords:
-        prompt = f"""As a SEO expert, I will provide you with a 'blog content'.
-        Your task is write 5 SEO optimised blog titles from given blog content.
-
-        Follow the below guidelines for generating the blog titles:
-        1). As SEO expert, follow all best practises for SEO optimised blog titles.
-        2). Your response should be optimised around given keywords and content.
-        3). Optimise your response for web search intent {input_title_intent}.
-        4). Optimise your response for blog type of {input_title_type}.
-        5). Your blog titles should in {input_language} language.\n
-
-        blog content: '{input_blog_content}'\n
-        """
+        prompt = f"""{seo_guidelines}\n\nBlog content: '{input_blog_content}'"""
     blog_titles = gemini_text_response(prompt, user_gemini_api_key)
-
     return blog_titles
 
 
