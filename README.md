@@ -44,3 +44,46 @@ To run the Alwrity program using Streamlit, follow these steps:
 
 With these steps, you can easily set up and run the Alwrity program with Streamlit on your local machine. Happy blogging!
 
+## Simple Local Installation Guide (For Non-Tech Users)
+
+Follow these easy steps to install and use Alwrity on your Windows computer:
+
+1. **Download & Install Python:**
+   - Go to [python.org/downloads](https://www.python.org/downloads/) and download the latest version of Python for Windows.
+   - Run the installer and make sure to check the box that says **"Add Python to PATH"** before clicking Install.
+
+2. **Download Alwrity Tool:**
+   - Click the green **Code** button on the [GitHub page](https://github.com/AJaySi/alwrity-title) and choose **Download ZIP**.
+   - Unzip the downloaded file to a folder on your computer (e.g., `C:\Users\YourName\Downloads\alwrity-title`).
+
+3. **Open Command Prompt:**
+   - Press `Win + R`, type `cmd`, and press Enter.
+   - In the Command Prompt window, type:
+     ```
+     cd C:\Users\YourName\Downloads\alwrity-title
+     ```
+     (Replace `YourName` with your Windows username if needed.)
+
+4. **Install Required Packages:**
+   - Type the following command and press Enter:
+     ```
+     pip install -r requirements.txt
+     ```
+   - Wait for the installation to finish (you need an internet connection).
+
+5. **Run the Tool:**
+   - In the same Command Prompt window, type:
+     ```
+     streamlit run blogtitle_app.py
+     ```
+   - Your web browser will open automatically. If not, copy the link shown in the Command Prompt and paste it into your browser.
+
+6. **Use Alwrity:**
+   - Enter your blog keywords and other details in the web app.
+   - (Optional) Enter your Gemini and Serper API keys in the API Configuration section for best results.
+   - Click **Generate Blog Titles** and enjoy!
+
+---
+
+**No coding required!** If you get stuck, ask a friend or contact support on the [GitHub Issues page](https://github.com/AJaySi/alwrity-title/issues).
+
