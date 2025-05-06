@@ -32,7 +32,7 @@ To run the Alwrity program using Streamlit, follow these steps:
 
 3. **Navigate to the Directory:** Change your current directory to the Alwrity project directory:
     ```bash
-    cd [this repo]
+    cd blogtitle_app.py
     ```
 
 4. **Run the Program:** Use the `streamlit run` command to run the Alwrity program:
