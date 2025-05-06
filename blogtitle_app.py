@@ -64,6 +64,13 @@ def main():
     hide_streamlit_footer = '<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;}</style>'
     st.markdown(hide_streamlit_footer, unsafe_allow_html=True)
 
+    # --- API Key Input Section ---
+    with st.expander("API Configuration 🔑", expanded=False):
+        st.markdown('''If the default Gemini API key is unavailable or exceeds its limits, you can provide your own API key below.<br>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank">Get Gemini API Key</a>
+        ''', unsafe_allow_html=True)
+        user_gemini_api_key = st.text_input("Gemini API Key", type="password", help="Paste your Gemini API Key here if you have one. Otherwise, the tool will use the default key if available.")
+
     st.title("✍️ Alwrity - AI Blog Title Generator")
 
     # Input section
@@ -116,7 +123,7 @@ def main():
             if not input_blog_keywords and not input_blog_content:
                 st.error('**🫣 Provide Inputs to generate Blog Titles. Either Blog Keywords OR content is required!**')
             else:
-                blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language)
+                blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key)
                 if blog_titles:
                     st.subheader('**👩🧕🔬 Go Rule search ranking with these Blog Titles!**')
                     with st.expander("**Final - Blog Titles Output 🎆🎇🎇**", expanded=True):
@@ -126,7 +133,7 @@ def main():
 
 
 # Function to generate blog metadesc
-def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language):
+def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None):
     """ Function to call upon LLM to get the work done. """
     # If keywords and content both are given.
     if input_blog_content and input_blog_keywords:
@@ -169,18 +176,23 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
 
         blog content: '{input_blog_content}'\n
         """
-    blog_titles = gemini_text_response(prompt)
+    blog_titles = gemini_text_response(prompt, user_gemini_api_key)
 
     return blog_titles
 
 
 @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-def gemini_text_response(prompt):
-    """ Common functiont to get response from gemini pro Text. """
+def gemini_text_response(prompt, user_gemini_api_key=None):
+    """ Common function to get response from gemini pro Text. """
     try:
-        genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
+        api_key = user_gemini_api_key or os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            st.error("GEMINI_API_KEY is missing. Please provide it in the API Configuration section or set it in the environment.")
+            return None
+        genai.configure(api_key=api_key)
     except Exception as err:
         st.error(f"Failed to configure Gemini: {err}")
+        return None
     # Set up the model
     generation_config = {
         "temperature": 0.6,
@@ -188,15 +200,13 @@ def gemini_text_response(prompt):
         "top_k": 1,
         "max_output_tokens": 1024
     }
-    # FIXME: Expose model_name in main_config
     model = genai.GenerativeModel(model_name="gemini-1.5-flash", generation_config=generation_config)
     try:
-        # text_response = []
         response = model.generate_content(prompt)
         return response.text
     except Exception as err:
-        st.error(response)
         st.error(f"Failed to get response from Gemini: {err}. Retrying.")
+        return None
 
 
 if __name__ == "__main__":
