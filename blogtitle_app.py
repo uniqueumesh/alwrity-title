@@ -169,6 +169,11 @@ def main():
 # Function to generate blog metadesc
 def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None, num_titles=5):
     """ Function to call upon LLM to get the work done. """
+    # Get competitor titles for inspiration
+    competitor_titles = []
+    if input_blog_keywords:
+        competitor_titles = get_serp_competitor_titles(input_blog_keywords)
+    competitor_titles_str = '\n'.join(competitor_titles) if competitor_titles else ''
     # Improved prompt for best SEO practices
     seo_guidelines = f"""
     Please generate {num_titles} unique, SEO-optimized blog titles based on the provided information. Follow ALL of Google's and industry best practices for blog titles:
@@ -184,14 +189,16 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
     - Optimize for web search intent: {input_title_intent}.
     - Optimize for blog type: {input_title_type}.
     - Write the titles in {input_language}.
+    - Take inspiration from the competitor titles below, but do NOT copy them. Make your titles even more attractive, unique, and SEO-optimized than the competitors.
     Output only the {num_titles} titles as a numbered list, nothing else.
     """
+    competitor_section = f"\nCompetitor Titles for Inspiration:\n{competitor_titles_str}" if competitor_titles_str else ''
     if input_blog_content and input_blog_keywords:
-        prompt = f"""{seo_guidelines}\n\nMain blog keywords: '{input_blog_keywords}'\nBlog content: '{input_blog_content}'"""
+        prompt = f"""{seo_guidelines}{competitor_section}\n\nMain blog keywords: '{input_blog_keywords}'\nBlog content: '{input_blog_content}'"""
     elif input_blog_keywords and not input_blog_content:
-        prompt = f"""{seo_guidelines}\n\nMain blog keywords: '{input_blog_keywords}'"""
+        prompt = f"""{seo_guidelines}{competitor_section}\n\nMain blog keywords: '{input_blog_keywords}'"""
     elif input_blog_content and not input_blog_keywords:
-        prompt = f"""{seo_guidelines}\n\nBlog content: '{input_blog_content}'"""
+        prompt = f"""{seo_guidelines}{competitor_section}\n\nBlog content: '{input_blog_content}'"""
     blog_titles = gemini_text_response(prompt, user_gemini_api_key)
     return blog_titles
 
