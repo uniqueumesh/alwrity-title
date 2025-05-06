@@ -69,9 +69,11 @@ def main():
     # --- API Key Input Section ---
     with st.expander("API Configuration 🔑", expanded=False):
         st.markdown('''If the default Gemini API key is unavailable or exceeds its limits, you can provide your own API key below.<br>
-        <a href="https://aistudio.google.com/app/apikey" target="_blank">Get Gemini API Key</a>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank">Get Gemini API Key</a><br>
+        <a href="https://serper.dev" target="_blank">Get SERPER API Key</a>
         ''', unsafe_allow_html=True)
         user_gemini_api_key = st.text_input("Gemini API Key", type="password", help="Paste your Gemini API Key here if you have one. Otherwise, the tool will use the default key if available.")
+        user_serper_api_key = st.text_input("Serper API Key (for SERP research)", type="password", help="Paste your Serper API Key here if you have one. Otherwise, the tool will use the default key if available.")
 
     st.title("✍️ Alwrity - AI Blog Title Generator")
 
@@ -115,6 +117,16 @@ def main():
                     placeholder="e.g., Italian, Dutch",
                     help="Specify your preferred language."
                 )
+
+    # --- SERP Competitor Title Research ---
+    serp_titles = []
+    if input_blog_keywords:
+        serp_titles = get_serp_competitor_titles(input_blog_keywords, user_serper_api_key)
+        if serp_titles:
+            st.markdown('<h4 style="margin-top:1.5rem; color:#1976D2;">🔎 Top 10 Competitor Blog Titles from Google SERP</h4>', unsafe_allow_html=True)
+            selected_title = st.selectbox('View a competitor title:', serp_titles, help="These are the top 10 blog titles from Google for your keyword. Use them for inspiration or comparison.")
+        else:
+            st.info('No competitor titles found for your keyword. Check your Serper API key or try a different keyword.')
 
     # Add option for number of titles
     st.markdown('<h3 style="margin-top:2rem;">How many blog titles do you want to generate?</h3>', unsafe_allow_html=True)
@@ -210,6 +222,44 @@ def gemini_text_response(prompt, user_gemini_api_key=None):
     except Exception as err:
         st.error(f"Failed to get response from Gemini: {err}. Retrying.")
         return None
+
+
+def get_serp_competitor_titles(search_keywords, user_serper_api_key=None):
+    """Fetch top 10 competitor blog titles from Google SERP using Serper API."""
+    import requests
+    import os
+    try:
+        serper_api_key = user_serper_api_key or os.getenv('SERPER_API_KEY')
+        if not serper_api_key:
+            return []
+        url = "https://google.serper.dev/search"
+        payload = json.dumps({
+            "q": search_keywords,
+            "gl": "us",
+            "hl": "en",
+            "num": 10,
+            "autocorrect": True,
+            "page": 1,
+            "type": "search",
+            "engine": "google"
+        })
+        headers = {
+            'X-API-KEY': serper_api_key,
+            'Content-Type': 'application/json'
+        }
+        response = requests.post(url, headers=headers, data=payload)
+        if response.status_code == 200:
+            data = response.json()
+            titles = []
+            for item in data.get('organic', [])[:10]:
+                title = item.get('title')
+                if title:
+                    titles.append(title)
+            return titles
+        else:
+            return []
+    except Exception:
+        return []
 
 
 if __name__ == "__main__":
