@@ -8,6 +8,8 @@ from tenacity import (
     wait_random_exponential,
 )
 import google.generativeai as genai
+import pandas as pd
+import io
 
 
 def main():
@@ -114,6 +116,10 @@ def main():
                     help="Specify your preferred language."
                 )
 
+    # Add option for number of titles
+    st.markdown('<h3 style="margin-top:2rem;">How many blog titles do you want to generate?</h3>', unsafe_allow_html=True)
+    num_titles = st.slider('Number of SEO-optimized blog titles', min_value=1, max_value=10, value=5, help="Choose how many blog titles to generate (1-10).")
+
     # Generate Blog Title button
     if st.button('**Generate Blog Titles**'):
         with st.spinner("Generating blog titles..."):
@@ -123,21 +129,37 @@ def main():
             if not input_blog_keywords and not input_blog_content:
                 st.error('**🫣 Provide Inputs to generate Blog Titles. Either Blog Keywords OR content is required!**')
             else:
-                blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key)
+                blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key, num_titles)
                 if blog_titles:
-                    st.subheader('**👩🧕🔬 Go Rule search ranking with these Blog Titles!**')
-                    with st.expander("**Final - Blog Titles Output 🎆🎇🎇**", expanded=True):
-                        st.markdown(blog_titles)
+                    st.session_state['blog_titles'] = blog_titles
                 else:
                     st.error("💥 **Failed to generate blog titles. Please try again!**")
 
+    # Show results if available in session state
+    if 'blog_titles' in st.session_state and st.session_state['blog_titles']:
+        st.subheader('**👩🧕🔬 Go Rule search ranking with these Blog Titles!**')
+        with st.expander("**Final - Blog Titles Output 🎆🎇🎇**", expanded=True):
+            st.markdown(st.session_state['blog_titles'])
+            # Excel export for A/B testing
+            titles_list = [t.strip().lstrip('0123456789. ') for t in st.session_state['blog_titles'].split('\n') if t.strip()]
+            df = pd.DataFrame({'Blog Title': titles_list})
+            excel_buffer = io.BytesIO()
+            df.to_excel(excel_buffer, index=False, engine='openpyxl')
+            excel_buffer.seek(0)
+            st.download_button(
+                label="Download Titles as Excel for A/B Testing",
+                data=excel_buffer,
+                file_name="blog_titles.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
 
 # Function to generate blog metadesc
-def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None):
+def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None, num_titles=5):
     """ Function to call upon LLM to get the work done. """
     # Improved prompt for best SEO practices
     seo_guidelines = f"""
-    Please generate 5 unique, SEO-optimized blog titles based on the provided information. Follow ALL of Google's and industry best practices for blog titles:
+    Please generate {num_titles} unique, SEO-optimized blog titles based on the provided information. Follow ALL of Google's and industry best practices for blog titles:
     - Place the main keyword at the beginning of the title if possible.
     - Keep each title concise (ideally 50–60 characters, max 65).
     - Make each title unique, clear, and compelling.
@@ -150,7 +172,7 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
     - Optimize for web search intent: {input_title_intent}.
     - Optimize for blog type: {input_title_type}.
     - Write the titles in {input_language}.
-    Output only the 5 titles as a numbered list, nothing else.
+    Output only the {num_titles} titles as a numbered list, nothing else.
     """
     if input_blog_content and input_blog_keywords:
         prompt = f"""{seo_guidelines}\n\nMain blog keywords: '{input_blog_keywords}'\nBlog content: '{input_blog_content}'"""
