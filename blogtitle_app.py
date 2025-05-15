@@ -116,6 +116,12 @@ def main():
                     placeholder="e.g., Italian, Dutch",
                     help="Specify your preferred language."
                 )
+            # Add Target Audience input
+            input_audience = st.text_input(
+                '🎯 Target Audience (Optional)',
+                placeholder="e.g., for Marketers, for Small Businesses",
+                help="Specify your target audience for more tailored titles."
+            )
 
     # --- SERP Competitor Title Research ---
     serp_titles = []
@@ -148,16 +154,13 @@ def main():
             if not input_blog_keywords and not input_blog_content:
                 st.error('**🫣 Provide Inputs to generate Blog Titles. Either Blog Keywords OR content is required!**')
             else:
-                blog_titles = generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key, num_titles)
+                blog_titles = generate_blog_titles(
+                    input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key, num_titles, input_audience
+                )
                 if blog_titles:
                     st.session_state['blog_titles'] = blog_titles
                 else:
                     st.error("💥 **Failed to generate blog titles. Please try again!**")
-
-    # Show results if available in session state
-    if 'blog_titles' in st.session_state and st.session_state['blog_titles']:
-        st.subheader('**👩🧕🔬 Go Rule search ranking with these Blog Titles!**')
-        with st.expander("**Final - Blog Titles Output 🎆🎇🎇**", expanded=True):
             st.markdown(st.session_state['blog_titles'])
             # Excel export for A/B testing
             titles_list = [t.strip().lstrip('0123456789. ') for t in st.session_state['blog_titles'].split('\n') if t.strip()]
@@ -174,7 +177,7 @@ def main():
 
 
 # Function to generate blog metadesc
-def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None, num_titles=5):
+def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_type, input_title_intent, input_language, user_gemini_api_key=None, num_titles=5, input_audience=None):
     """ Function to call upon LLM to get the work done. """
     # Get competitor titles for inspiration (use cache if available)
     competitor_titles = []
@@ -185,6 +188,7 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
         competitor_titles = get_serp_competitor_titles(input_blog_keywords)
     competitor_titles_str = '\n'.join(competitor_titles) if competitor_titles else ''
     # Improved prompt for best SEO practices
+    audience_section = f"\nTarget Audience: {input_audience}" if input_audience else ''
     seo_guidelines = f"""
     Please generate {num_titles} unique, SEO-optimized blog titles based on the provided information. Follow ALL of Google's and industry best practices for blog titles:
     - Place the main keyword at the beginning of the title if possible.
@@ -193,7 +197,7 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
     - Use numbers, dates, or power words where appropriate.
     - Clearly state the value or benefit to the reader.
     - Avoid keyword stuffing; use the keyword naturally.
-    - Target the intended audience if specified.
+    - Target the intended audience if specified.{audience_section}
     - Use natural, engaging language (no clickbait or misleading phrasing).
     - Ensure each title is highly relevant to the blog's content and keywords.
     - Optimize for web search intent: {input_title_intent}.
@@ -204,11 +208,11 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
     """
     competitor_section = f"\nCompetitor Titles for Inspiration:\n{competitor_titles_str}" if competitor_titles_str else ''
     if input_blog_content and input_blog_keywords:
-        prompt = f"""{seo_guidelines}{competitor_section}\n\nMain blog keywords: '{input_blog_keywords}'\nBlog content: '{input_blog_content}'"""
+        prompt = f"""{seo_guidelines}{competitor_section}{audience_section}\n\nMain blog keywords: '{input_blog_keywords}'\nBlog content: '{input_blog_content}'"""
     elif input_blog_keywords and not input_blog_content:
-        prompt = f"""{seo_guidelines}{competitor_section}\n\nMain blog keywords: '{input_blog_keywords}'"""
+        prompt = f"""{seo_guidelines}{competitor_section}{audience_section}\n\nMain blog keywords: '{input_blog_keywords}'"""
     elif input_blog_content and not input_blog_keywords:
-        prompt = f"""{seo_guidelines}{competitor_section}\n\nBlog content: '{input_blog_content}'"""
+        prompt = f"""{seo_guidelines}{competitor_section}{audience_section}\n\nBlog content: '{input_blog_content}'"""
     blog_titles = gemini_text_response(prompt, user_gemini_api_key)
     if blog_titles == 'RATE_LIMIT':
         st.warning('⚠️ Gemini API rate limit or quota exceeded. Please try again later or use a different API key.')
