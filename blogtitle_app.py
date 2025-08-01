@@ -194,8 +194,8 @@ Generate {num_titles} different blog post titles for the topic below.
 Rules:
 - Use the main keyword in each title.
 - Make each title unique and interesting.
-- Each title must be no more than 60 characters. Do not exceed this limit.
-- If a title is longer than 60 characters, shorten it.
+- Each title must be between 50 and 60 characters, including spaces.
+- If a title is shorter than 50 or longer than 60 characters, adjust it.
 - Use simple, clear language.
 - Include at least one question, one list, and one how-to or guide.
 - Add numbers, power words, or the current year if it makes sense.
