@@ -187,22 +187,24 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
     elif input_blog_keywords:
         competitor_titles = get_serp_competitor_titles(input_blog_keywords)
     competitor_titles_str = '\n'.join(competitor_titles) if competitor_titles else ''
-    # Improved, simple prompt for best SEO practices
+    # Further refined prompt for best results
     seo_guidelines = f"""
 Generate {num_titles} different blog post titles for the topic below.
 
 Rules:
 - Use the main keyword in each title.
 - Make each title unique and interesting.
-- Keep each title between 50 and 65 characters.
+- Each title must be no more than 60 characters. Do not exceed this limit.
+- If a title is longer than 60 characters, shorten it.
 - Use simple, clear language.
-- Try different styles: questions, lists, how-to, guides, or tips.
-- Add numbers or power words if it makes sense.
+- Include at least one question, one list, and one how-to or guide.
+- Add numbers, power words, or the current year if it makes sense.
+- If a target audience is given, mention it in every title.
+- Make the search intent clear in each title.
+- Include at least one call-to-action.
 - Do not copy from the competitor titles below.
-- Make sure the titles fit the blog type: {input_title_type}.
-- Match the search intent: {input_title_intent}.
+- Avoid repeating the same words or phrases.
 - Write in this language: {input_language}.
-- If a target audience is given, make the titles fit that audience.
 
 Topic/Keywords: {input_blog_keywords}
 Blog Content (if any): {input_blog_content}
