@@ -187,32 +187,40 @@ def generate_blog_titles(input_blog_keywords, input_blog_content, input_title_ty
     elif input_blog_keywords:
         competitor_titles = get_serp_competitor_titles(input_blog_keywords)
     competitor_titles_str = '\n'.join(competitor_titles) if competitor_titles else ''
-    # Improved prompt for best SEO practices
-    audience_section = f"\nTarget Audience: {input_audience}" if input_audience else ''
+    # Further refined prompt for best results
     seo_guidelines = f"""
-    Please generate {num_titles} unique, SEO-optimized blog titles based on the provided information. Follow ALL of Google's and industry best practices for blog titles:
-    - Place the main keyword at the beginning of the title if possible.
-    - Keep each title concise (ideally 50–60 characters, max 65).
-    - Make each title unique, clear, and compelling.
-    - Use numbers, dates, or power words where appropriate.
-    - Clearly state the value or benefit to the reader.
-    - Avoid keyword stuffing; use the keyword naturally.
-    - Target the intended audience if specified.{audience_section}
-    - Use natural, engaging language (no clickbait or misleading phrasing).
-    - Ensure each title is highly relevant to the blog's content and keywords.
-    - Optimize for web search intent: {input_title_intent}.
-    - Optimize for blog type: {input_title_type}.
-    - Write the titles in {input_language}.
-    - Take inspiration from the competitor titles below, but do NOT copy them. Make your titles even more attractive, unique, and SEO-optimized than the competitors.
-    Output only the {num_titles} titles as a numbered list, nothing else.
-    """
-    competitor_section = f"\nCompetitor Titles for Inspiration:\n{competitor_titles_str}" if competitor_titles_str else ''
+Generate {num_titles} different blog post titles for the topic below.
+
+Rules:
+- Use the main keyword in each title.
+- Make each title unique and interesting.
+- Each title must be between 50 and 60 characters, including spaces.
+- If a title is shorter than 50 or longer than 60 characters, adjust it.
+- Use simple, clear language.
+- Include at least one question, one list, and one how-to or guide.
+- Add numbers, power words, or the current year if it makes sense.
+- If a target audience is given, mention it in every title.
+- Make the search intent clear in each title.
+- Include at least one call-to-action.
+- Do not copy from the competitor titles below.
+- Avoid repeating the same words or phrases.
+- Write in this language: {input_language}.
+
+Topic/Keywords: {input_blog_keywords}
+Blog Content (if any): {input_blog_content}
+Target Audience (if any): {input_audience}
+Competitor Titles (for inspiration, do not copy):
+{competitor_titles_str}
+
+List only the {num_titles} titles. Do not add anything else.
+"""
+    competitor_section = ""  # Now included in the main prompt
     if input_blog_content and input_blog_keywords:
-        prompt = f"""{seo_guidelines}{competitor_section}{audience_section}\n\nMain blog keywords: '{input_blog_keywords}'\nBlog content: '{input_blog_content}'"""
+        prompt = seo_guidelines
     elif input_blog_keywords and not input_blog_content:
-        prompt = f"""{seo_guidelines}{competitor_section}{audience_section}\n\nMain blog keywords: '{input_blog_keywords}'"""
+        prompt = seo_guidelines
     elif input_blog_content and not input_blog_keywords:
-        prompt = f"""{seo_guidelines}{competitor_section}{audience_section}\n\nBlog content: '{input_blog_content}'"""
+        prompt = seo_guidelines
     blog_titles = gemini_text_response(prompt, user_gemini_api_key)
     if blog_titles == 'RATE_LIMIT':
         st.warning('⚠️ Gemini API rate limit or quota exceeded. Please try again later or use a different API key.')
